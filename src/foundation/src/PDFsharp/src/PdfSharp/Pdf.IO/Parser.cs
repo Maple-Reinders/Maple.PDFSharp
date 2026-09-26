@@ -1180,6 +1180,13 @@ namespace PdfSharp.Pdf.IO
                         var objectID = objectIDWithOffset.Key;
                         var offset = objectIDWithOffset.Value;
 
+                        // MAPLE: An object stream of an older revision must not resurrect an object whose newest xref entry is invalid.
+                        if (_xrefTombstonedObjectNumbers.Contains(objectID.ObjectNumber))
+                        {
+                            PdfSharpLogHost.PdfReadingLogger.LogWarning("Ignoring object with ID {objectID} from an object stream because its newest xref entry is invalid.", objectID);
+                            continue;
+                        }
+
                         // PDFsharp reads objects from high addresses down to low addresses.
                         // Thus, the newest object should be read first.
                         // For duplicate IDs, we keep the first object and ignore objects read later.
@@ -1479,6 +1486,11 @@ namespace PdfSharp.Pdf.IO
                                 PdfSharpLogHost.Logger.LogError(message);
                             }
 #endif
+                            // MAPLE: An older revision must not resurrect an object whose newest xref stream entry is invalid.
+                            _xrefDefinedObjectNumbers.Add(idToUse);
+                            if (_xrefTombstonedObjectNumbers.Contains(idToUse))
+                                continue;
+
                             // Even if it is restricted, an object can exist in more than one subsection.
                             // (PDF Reference Implementation Notes 15).
                             var objectID = new PdfObjectID(idToUse, generation);
@@ -1721,6 +1733,9 @@ namespace PdfSharp.Pdf.IO
 
                     xrefStream.Entries.Add(item);
 
+                    // MAPLE: The object number of this entry according to /Index.
+                    int entryObjectNumber = subsections[ssc][0] + idx;
+
                     switch (item.Type)
                     {
                         case 0:
@@ -1731,6 +1746,10 @@ namespace PdfSharp.Pdf.IO
                             //// Even if it is restricted, an object can exist in more than one subsection.
                             //// (PDF Reference Implementation Notes 15).
 
+                            // MAPLE: An older revision must not resurrect an object whose newest entry is invalid.
+                            if (_xrefTombstonedObjectNumbers.Contains(entryObjectNumber))
+                                break;
+
                             SizeType position = (SizeType)item.Field2;
                             try
                             {
@@ -1739,9 +1758,12 @@ namespace PdfSharp.Pdf.IO
                             catch (PdfReaderException ex)
                             {
                                 // MAPLE: Ignore xref stream entries that do not point to an object, e.g. into a zeroed
-                                // region left by a broken incremental update. An older entry from /Prev may be used instead.
-                                PdfSharpLogHost.Logger.LogWarning("Invalid entry in xref stream: no object at position {Position}. Entry is ignored. {Message}",
-                                    position, ex.Message);
+                                // region left by a broken incremental update. If no newer revision defines the object,
+                                // tombstone it so it stays unavailable (null) instead of an older revision being used.
+                                if (_xrefDefinedObjectNumbers.Add(entryObjectNumber))
+                                    _xrefTombstonedObjectNumbers.Add(entryObjectNumber);
+                                PdfSharpLogHost.Logger.LogWarning("Invalid entry in xref stream: no object {ObjectNumber} at position {Position}. The object is treated as null. {Message}",
+                                    entryObjectNumber, position, ex.Message);
                                 break;
                             }
 #if DEBUG_
@@ -1749,6 +1771,11 @@ namespace PdfSharp.Pdf.IO
                                 _ = typeof(int);
 #endif
                             Debug.Assert(objectID.GenerationNumber == item.Field3);
+
+                            _xrefDefinedObjectNumbers.Add(entryObjectNumber);
+                            _xrefDefinedObjectNumbers.Add(objectID.ObjectNumber);
+                            if (_xrefTombstonedObjectNumbers.Contains(objectID.ObjectNumber))
+                                break;
 
                             // Ignore the latter one.
                             if (!xrefTable.Contains(objectID))
@@ -1767,6 +1794,8 @@ namespace PdfSharp.Pdf.IO
 
                         case 2:
                             // Nothing to do yet.
+                            // MAPLE: Remember that this revision defines the object, so an invalid entry in an older revision does not tombstone it.
+                            _xrefDefinedObjectNumbers.Add(entryObjectNumber);
                             break;
                     }
                 }
@@ -1878,6 +1907,11 @@ namespace PdfSharp.Pdf.IO
         readonly Dictionary<PdfObjectID, (PdfObjectStream ObjectStream, Parser Parser)> _objectStreamsWithParsers = new();
 #endif
         readonly Parser _documentParser;
+        // MAPLE: Object numbers defined by the xref sections read so far (newest revision first), and object numbers whose
+        // newest xref entry is invalid. A tombstoned object is unavailable (null) and must not be resurrected from an older
+        // revision, because the most recent revision takes precedence (ISO 32000-1 7.5.6).
+        readonly HashSet<int> _xrefDefinedObjectNumbers = [];
+        readonly HashSet<int> _xrefTombstonedObjectNumbers = [];
         private int _endStreamNotFoundCounter = 0;
         readonly ILogger _logger;
     }
