@@ -4,7 +4,9 @@
 using System.Collections;
 using System.Reflection;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using PdfSharp.Drawing;
+using PdfSharp.Logging;
 using PdfSharp.Pdf.IO;
 using PdfSharp.Pdf.Filters;
 using PdfSharp.Pdf.Advanced;
@@ -594,7 +596,20 @@ namespace PdfSharp.Pdf
                 if (obj is PdfRectangle rectangle)
                     return rectangle;
 
-                throw new InvalidOperationException($"PDF item is '{obj.GetType().FullName}', but PdfRectangle expected.");
+                // MAPLE: Some producers write page boxes with junk after the 4 coordinates,
+                // e.g. '/MediaBox [0 0 612 792 78 0 R 77 0 R]'. Use the first 4 numbers.
+                if (obj is PdfArray { Elements.Count: > 4 } longArray
+                    && longArray.Elements.Take(4).All(item => item is PdfInteger or PdfReal or PdfLongInteger))
+                {
+                    PdfSharpLogHost.Logger.LogWarning("Rectangle '{Key}' has {Count} elements. Only the first 4 are used.", key, longArray.Elements.Count);
+                    return (PdfRectangle)(this[key] =
+                        new PdfRectangle(longArray.Elements.GetReal(0), longArray.Elements.GetReal(1),
+                                         longArray.Elements.GetReal(2), longArray.Elements.GetReal(3)));
+                }
+
+                // MAPLE: Ignore invalid rectangles instead of throwing.
+                PdfSharpLogHost.Logger.LogWarning("PDF item '{Key}' is '{Type}', but PdfRectangle expected. An empty rectangle is used.", key, obj.GetType().FullName);
+                return new();
             }
 
             /// <summary>

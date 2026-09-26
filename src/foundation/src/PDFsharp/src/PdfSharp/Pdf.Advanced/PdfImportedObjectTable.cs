@@ -69,6 +69,13 @@ namespace PdfSharp.Pdf.Advanced
         /// </summary>
         public PdfReference this[PdfObjectID externalID] => _externalIDs[externalID.ToString()];
 
+        // MAPLE: Used to treat references to undefined objects as null when importing.
+        /// <summary>
+        /// Gets the cloned object that corresponds to the specified external identifier, if it was imported.
+        /// </summary>
+        public bool TryGetValue(PdfObjectID externalID, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out PdfReference iref)
+            => _externalIDs.TryGetValue(externalID.ToString(), out iref);
+
         /// <summary>
         /// Maps external object identifiers to cross-reference entries of the importing document
         /// {PdfObjectID -> PdfReference}.

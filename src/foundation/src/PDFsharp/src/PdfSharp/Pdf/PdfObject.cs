@@ -1,6 +1,8 @@
 ﻿// PDFsharp - A .NET library for processing PDF
 // See the LICENSE file in the solution root for more information.
 
+using Microsoft.Extensions.Logging;
+using PdfSharp.Logging;
 using PdfSharp.Pdf.Advanced;
 using PdfSharp.Pdf.IO;
 
@@ -400,7 +402,13 @@ namespace PdfSharp.Pdf
 
                         //Debug.Assert(iref.Document == iot.Document);
                         // No: Replace with iref of cloned object.
-                        var newXRef = iot[iref.ObjectID];  // TODO_OLD: Explain this line of code in all details.
+                        if (!iot.TryGetValue(iref.ObjectID, out var newXRef))  // TODO_OLD: Explain this line of code in all details.
+                        {
+                            // MAPLE: A reference to an undefined object is treated as null (PDF spec 7.3.10).
+                            PdfSharpLogHost.Logger.LogWarning("Reference to undefined object '{ObjectID}' in key '{Key}' is replaced by null.", iref.ObjectID, name);
+                            dict.Elements[name] = PdfNull.Value;
+                            continue;
+                        }
                         Debug.Assert(newXRef != null);
                         Debug.Assert(newXRef.Document == owner);
                         dict.Elements[name] = newXRef;
@@ -460,7 +468,13 @@ namespace PdfSharp.Pdf
 
                         // No: replace with iref of cloned object.
                         Debug.Assert(iref.Document == iot.ExternalDocument);
-                        PdfReference newXRef = iot[iref.ObjectID];
+                        if (!iot.TryGetValue(iref.ObjectID, out var newXRef))
+                        {
+                            // MAPLE: A reference to an undefined object is treated as null (PDF spec 7.3.10).
+                            PdfSharpLogHost.Logger.LogWarning("Reference to undefined object '{ObjectID}' at array index {Index} is replaced by null.", iref.ObjectID, idx);
+                            array.Elements[idx] = PdfNull.Value;
+                            continue;
+                        }
                         Debug.Assert(newXRef != null);
                         Debug.Assert(newXRef.Document == owner);
                         array.Elements[idx] = newXRef;

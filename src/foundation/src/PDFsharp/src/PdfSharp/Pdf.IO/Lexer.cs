@@ -1093,7 +1093,7 @@ namespace PdfSharp.Pdf.IO
         /// </summary>
         public bool TryScanEndStreamSymbol()
         {
-            return _currChar switch
+            var success = _currChar switch
             {
                 // This case is not recommended by specs, but valid PDF.
                 'e' when _nextChar == 'n' => TryScanLiterally("endstream"),
@@ -1103,6 +1103,21 @@ namespace PdfSharp.Pdf.IO
                 Chars.CR when _nextChar == Chars.LF => TryScanLiterally("\r\nendstream"),
                 _ => false
             };
+            if (success || !IsWhiteSpace(_currChar))
+                return success;
+
+            // MAPLE: Some producers pad the stream content with extra line feeds before 'endstream'.
+            // The stream length is correct in this case, so skip the white-space and look for 'endstream'.
+            var initialPosition = Position;
+            while (IsWhiteSpace(_currChar))
+                ScanNextChar(false);
+            if (TryScanLiterally("endstream"))
+            {
+                PdfSharpLogHost.Logger.LogWarning("Skipped {Count} white-space characters before 'endstream'.", Position - initialPosition - "endstream".Length);
+                return true;
+            }
+            Position = initialPosition;
+            return false;
         }
 
         /// <summary>

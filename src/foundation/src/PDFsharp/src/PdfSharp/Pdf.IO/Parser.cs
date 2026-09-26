@@ -632,7 +632,19 @@ namespace PdfSharp.Pdf.IO
             {
                 var val = items[idx];
                 if (val is not PdfName)
-                    ParserDiagnostics.ThrowParserException("Name expected."); // TODO_OLD L10N using PsMsgs
+                {
+                    // MAPLE: Skip items that are not names in key position, e.g. caused by a malformed number
+                    // like '/ItalicAngle -17.-32768', and resynchronize on the next name.
+                    PdfSharpLogHost.Logger.LogWarning("Name expected in dictionary, but found '{Item}'. Item is ignored.", val);
+                    idx--;
+                    continue;
+                }
+                if (idx + 1 >= count)
+                {
+                    // MAPLE: Ignore a trailing key without value.
+                    PdfSharpLogHost.Logger.LogWarning("Dictionary key '{Key}' has no value and is ignored.", val);
+                    break;
+                }
 
                 string key = val.ToString() ?? NRT.ThrowOnNull<string>();
                 val = items[idx + 1];
@@ -1720,7 +1732,18 @@ namespace PdfSharp.Pdf.IO
                             //// (PDF Reference Implementation Notes 15).
 
                             SizeType position = (SizeType)item.Field2;
-                            objectID = ReadObjectNumber(position);
+                            try
+                            {
+                                objectID = ReadObjectNumber(position);
+                            }
+                            catch (PdfReaderException ex)
+                            {
+                                // MAPLE: Ignore xref stream entries that do not point to an object, e.g. into a zeroed
+                                // region left by a broken incremental update. An older entry from /Prev may be used instead.
+                                PdfSharpLogHost.Logger.LogWarning("Invalid entry in xref stream: no object at position {Position}. Entry is ignored. {Message}",
+                                    position, ex.Message);
+                                break;
+                            }
 #if DEBUG_
                             if (objectID.ObjectNumber == 1074)
                                 _ = typeof(int);
