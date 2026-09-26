@@ -14,8 +14,12 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  testProject: 'src/foundation/src/PDFsharp/tests/Maple.PDFsharp.ProblemPDF.Tests/Maple.PDFsharp.ProblemPDF.Tests.csproj'
-  packageProject: 'src/foundation/nuget/src/PDFsharp.NuGet/PDFsharp.NuGet.csproj'
+  # With multiple checkouts, the repo is in a subfolder of $(Build.SourcesDirectory).
+  # DotNetCoreCLI resolves 'projects' against $(System.DefaultWorkingDirectory), not 'workingDirectory', so use absolute paths.
+  # Note: the 'test' command only warns when no project matches, so a wrong path here silently skips the tests.
+  repoDirectory: '$(Build.SourcesDirectory)/Maple.PDFSharp'
+  testProject: '$(repoDirectory)/src/foundation/src/PDFsharp/tests/Maple.PDFsharp.ProblemPDF.Tests/Maple.PDFsharp.ProblemPDF.Tests.csproj'
+  packageProject: '$(repoDirectory)/src/foundation/nuget/src/PDFsharp.NuGet/PDFsharp.NuGet.csproj'
 
 steps:
 # GitVersion.MsBuild needs the full history and tags.
@@ -40,7 +44,7 @@ steps:
     command: 'test'
     projects: '$(testProject)'
     arguments: '--configuration $(buildConfiguration)'
-    workingDirectory: '$(Build.SourcesDirectory)/Maple.PDFSharp'
+    workingDirectory: '$(repoDirectory)'
 
 # GeneratePackageOnBuild creates Maple.PDFsharp.<version>.nupkg.
 - task: DotNetCoreCLI@2
@@ -49,13 +53,13 @@ steps:
     command: 'build'
     projects: '$(packageProject)'
     arguments: '--configuration $(buildConfiguration)'
-    workingDirectory: '$(Build.SourcesDirectory)/Maple.PDFSharp'
+    workingDirectory: '$(repoDirectory)'
 
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
   inputs:
     command: 'push'
-    packagesToPush: '$(Build.SourcesDirectory)/Maple.PDFSharp/**/bin/$(buildConfiguration)/Maple.PDFsharp.*.nupkg;!$(Build.SourcesDirectory)/Maple.PDFSharp/**/*.symbols.nupkg'
+    packagesToPush: '$(repoDirectory)/**/bin/$(buildConfiguration)/Maple.PDFsharp.*.nupkg;!$(repoDirectory)/**/*.symbols.nupkg'
     nuGetFeedType: 'internal'
     publishVstsFeed: 'e786d536-6655-44c0-be8c-e893a91d0e8e/528f8f46-d747-443c-90d8-7bcaed97c514'
