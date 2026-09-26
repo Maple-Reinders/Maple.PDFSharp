@@ -56,6 +56,15 @@ steps:
     arguments: '--configuration $(buildConfiguration)'
     workingDirectory: '$(repoDirectory)'
 
+# Assets (fonts, images, PDFs) are not in the repo. PdfSharp.WPFonts embeds fonts from assets/, so download them before building the package.
+- task: PowerShell@2
+  displayName: 'Download assets'
+  inputs:
+    targetType: 'filePath'
+    filePath: '$(repoDirectory)/dev/download-assets.ps1'
+    pwsh: true
+    workingDirectory: '$(repoDirectory)'
+
 # GeneratePackageOnBuild creates Maple.PDFsharp.<version>.nupkg.
 - task: DotNetCoreCLI@2
   displayName: 'Build Maple.PDFsharp package'
