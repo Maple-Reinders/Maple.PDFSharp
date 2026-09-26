@@ -274,6 +274,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "docs-dummy", "docs\docs-dum
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PdfSharp.Cryptography", "src\foundation\src\PDFsharp\src\PdfSharp.Cryptography\PdfSharp.Cryptography.csproj", "{769ED050-15AF-4EB5-A89F-D7123EE5AA95}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Maple.PDFsharp.ProblemPDF.Tests", "src\foundation\src\PDFsharp\tests\Maple.PDFsharp.ProblemPDF.Tests\Maple.PDFsharp.ProblemPDF.Tests.csproj", "{06BFF3C8-F457-4C8D-97C1-29C04DDBB5AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -568,6 +570,10 @@ Global
 		{769ED050-15AF-4EB5-A89F-D7123EE5AA95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{769ED050-15AF-4EB5-A89F-D7123EE5AA95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{769ED050-15AF-4EB5-A89F-D7123EE5AA95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06BFF3C8-F457-4C8D-97C1-29C04DDBB5AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06BFF3C8-F457-4C8D-97C1-29C04DDBB5AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06BFF3C8-F457-4C8D-97C1-29C04DDBB5AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06BFF3C8-F457-4C8D-97C1-29C04DDBB5AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -675,6 +681,7 @@ Global
 		{F4AB506C-AD13-4383-9AF9-48D74085ECC1} = {7C753636-7947-46E0-95E0-135EAA7BFEB3}
 		{76B94284-402D-4951-8DA4-7FFAF15E6C95} = {76BA9372-65AE-479C-AEF7-D50E6B486CEF}
 		{769ED050-15AF-4EB5-A89F-D7123EE5AA95} = {7C753636-7947-46E0-95E0-135EAA7BFEB3}
+		{06BFF3C8-F457-4C8D-97C1-29C04DDBB5AE} = {71BD4587-A8B0-4653-A3B2-93578F71ABB7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D5FF5562-3C79-434B-B951-B84542D01625}

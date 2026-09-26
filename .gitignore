@@ -1,6 +1,8 @@
 [Oo]bj/
 [Bb]in/
 assets/
+# Maple: private problem PDFs checked out by the Azure pipeline. Never commit these.
+/ProblemPDFs/
 TestResults/
 localtests/
 .nuget/
