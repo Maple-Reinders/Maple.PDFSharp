@@ -33,10 +33,20 @@ steps:
 - checkout: Maple.iText.ProblemPDFs
   path: s\Maple.PDFSharp\ProblemPDFs
 
+# The projects target net10.0, so the .NET 10 SDK is needed to build.
 - task: UseDotNet@2
+  displayName: 'Install .NET 10 SDK'
   inputs:
     packageType: 'sdk'
     version: '10.x'
+
+# UseDotNet makes 'dotnet' resolve to the tool cache, which only contains what is installed there.
+# The tests run on net8.0, so the .NET 8 runtime must be installed next to the SDK.
+- task: UseDotNet@2
+  displayName: 'Install .NET 8 runtime'
+  inputs:
+    packageType: 'runtime'
+    version: '8.x'
 
 - task: DotNetCoreCLI@2
   displayName: 'Test problem PDFs'
