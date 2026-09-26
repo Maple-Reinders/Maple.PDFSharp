@@ -13,8 +13,8 @@
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <NuspecFile>$(MSBuildThisFileDirectory)$(MSBuildProjectName).nuspec</NuspecFile>
-    <NuGetId>PDFsharp</NuGetId>
-    <NuGetTitle>PDFsharp for Windows and Linux</NuGetTitle>
+    <NuGetId>Maple.PDFsharp</NuGetId>
+    <NuGetTitle>Maple fork of PDFsharp for Windows and Linux</NuGetTitle>
     <NuGetDescription Condition=" '$(Configuration)'=='Debug' ">$(DebugBuildMessage)%0D$(NuGetDescription)</NuGetDescription>
     <NuGetSummary>A .NET library for processing PDF.</NuGetSummary>
     <NuGetTags>$(NuGetTags_PdfSharp)</NuGetTags>
@@ -30,5 +30,17 @@
     <ProjectReference Include="..\..\..\src\shared\src\PdfSharp.System\PdfSharp.System.csproj" />
     <ProjectReference Include="..\..\..\src\shared\src\PdfSharp.WPFonts\PdfSharp.WPFonts.csproj" />
   </ItemGroup>
+
+  <!-- Maple: pin the package version to the upstream release instead of the GitVersion one (e.g. 6.2.5-maple-package.1).
+       Azure Artifacts rejects re-pushing a version, so bump this when merging upstream or changing the fork. -->
+  <PropertyGroup>
+    <MaplePackageVersion>6.2.4</MaplePackageVersion>
+  </PropertyGroup>
+
+  <Target Name="MaplePinPackageVersion" DependsOnTargets="GetVersion" BeforeTargets="SetNuspecProperties;GenerateNuspec">
+    <PropertyGroup>
+      <PackageVersion>$(MaplePackageVersion)</PackageVersion>
+    </PropertyGroup>
+  </Target>
 
 </Project>

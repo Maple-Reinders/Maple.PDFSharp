@@ -1,35 +1,61 @@
-# ASP.NET
-# Build and test ASP.NET projects.
-# Add steps that publish symbols, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
+resources:
+  repositories:
+    - repository: Maple.iText.ProblemPDFs
+      type: github
+      endpoint: Maple-Reinders
+      name: Maple-Reinders/Maple.iText.ProblemPDFs
+      ref: main
 
 trigger:
-- master
+- maple-package
 
 pool:
-  # vmImage: 'windows-latest'
-  name: Default
+  vmImage: 'windows-latest'
 
 variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  testProject: 'src/foundation/src/PDFsharp/tests/Maple.PDFsharp.ProblemPDF.Tests/Maple.PDFsharp.ProblemPDF.Tests.csproj'
+  packageProject: 'src/foundation/nuget/src/PDFsharp.NuGet/PDFsharp.NuGet.csproj'
 
 steps:
+# GitVersion.MsBuild needs the full history and tags.
+- checkout: self
+  path: s\Maple.PDFSharp
+  persistCredentials: true
+  clean: true
+  fetchDepth: 0
+  fetchTags: true
+# The problem PDFs are private. They are checked out into the (git-ignored) ProblemPDFs folder and read in place by the tests.
+- checkout: Maple.iText.ProblemPDFs
+  path: s\Maple.PDFSharp\ProblemPDFs
+
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '10.x'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Test problem PDFs'
+  inputs:
+    command: 'test'
+    projects: '$(testProject)'
+    arguments: '--configuration $(buildConfiguration)'
+    workingDirectory: '$(Build.SourcesDirectory)/Maple.PDFSharp'
+
+# GeneratePackageOnBuild creates Maple.PDFsharp.<version>.nupkg.
+- task: DotNetCoreCLI@2
+  displayName: 'Build Maple.PDFsharp package'
+  inputs:
+    command: 'build'
+    projects: '$(packageProject)'
+    arguments: '--configuration $(buildConfiguration)'
+    workingDirectory: '$(Build.SourcesDirectory)/Maple.PDFSharp'
+
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
   inputs:
-    restoreSolution: '$(solution)'
-
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-
-- task: VSTest@2
-  inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    command: 'push'
+    packagesToPush: '$(Build.SourcesDirectory)/Maple.PDFSharp/**/bin/$(buildConfiguration)/Maple.PDFsharp.*.nupkg;!$(Build.SourcesDirectory)/Maple.PDFSharp/**/*.symbols.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: 'e786d536-6655-44c0-be8c-e893a91d0e8e/528f8f46-d747-443c-90d8-7bcaed97c514'
